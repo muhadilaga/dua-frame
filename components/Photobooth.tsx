@@ -96,6 +96,30 @@ export default function Photobooth() {
 
       {error && <p className="text-red-400">{error}</p>}
 
+      <div className="flex flex-col items-center gap-2">
+        <p className="text-sm text-zinc-400">Pilih frame dulu:</p>
+        <div className="flex flex-wrap justify-center gap-2">
+          {FRAMES.map((f) => (
+            <button
+              key={f.id}
+              onClick={() => setFrame(f)}
+              disabled={isCapturing}
+              className={`flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold disabled:opacity-50 ${
+                frame.id === f.id
+                  ? "bg-white text-zinc-950"
+                  : "border-white text-white"
+              }`}
+            >
+              <span
+                className="inline-block h-3 w-3 rounded-full border border-black/20"
+                style={{ background: f.bg }}
+              />
+              {f.name}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="flex gap-3">
         <button
           onClick={startSession}
@@ -119,28 +143,6 @@ export default function Photobooth() {
           {downloading ? "Menyiapkan..." : "Download PNG"}
         </button>
       </div>
-
-      {photos.length > 0 && (
-        <div className="flex flex-wrap justify-center gap-2">
-          {FRAMES.map((f) => (
-            <button
-              key={f.id}
-              onClick={() => setFrame(f)}
-              className={`flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold ${
-                frame.id === f.id
-                  ? "bg-white text-zinc-950"
-                  : "border-white text-white"
-              }`}
-            >
-              <span
-                className="inline-block h-3 w-3 rounded-full border border-black/20"
-                style={{ background: f.bg }}
-              />
-              {f.name}
-            </button>
-          ))}
-        </div>
-      )}
 
       {photos.length > 0 && (
         <div
