@@ -1,6 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import {
+  FRAMES,
+  downloadStrip,
+  frameCaption,
+  type Frame,
+} from "@/lib/strip";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -11,6 +17,8 @@ export default function Photobooth() {
   const [flash, setFlash] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [frame, setFrame] = useState<Frame>(FRAMES[0]);
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     let stream: MediaStream | undefined;
@@ -60,6 +68,18 @@ export default function Photobooth() {
     setIsCapturing(false);
   };
 
+  const handleDownload = async () => {
+    if (photos.length === 0 || downloading) return;
+    setDownloading(true);
+    try {
+      await downloadStrip(photos, frame);
+    } catch {
+      setError("Download gagal. Coba lagi.");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   return (
     <div className="flex min-h-screen flex-col items-center gap-6 bg-zinc-950 p-6 text-white">
       <h1 className="text-2xl font-bold">DuaFrame</h1>
@@ -91,13 +111,107 @@ export default function Photobooth() {
         >
           Ulangi
         </button>
+        <button
+          onClick={handleDownload}
+          disabled={photos.length === 0 || downloading}
+          className="rounded-full bg-emerald-400 px-6 py-3 font-semibold text-zinc-950 disabled:opacity-50"
+        >
+          {downloading ? "Menyiapkan..." : "Download PNG"}
+        </button>
       </div>
 
       {photos.length > 0 && (
-        <div className="flex flex-col gap-2 rounded-xl bg-white p-3">
+        <div className="flex flex-wrap justify-center gap-2">
+          {FRAMES.map((f) => (
+            <button
+              key={f.id}
+              onClick={() => setFrame(f)}
+              className={`flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold ${
+                frame.id === f.id
+                  ? "bg-white text-zinc-950"
+                  : "border-white text-white"
+              }`}
+            >
+              <span
+                className="inline-block h-3 w-3 rounded-full border border-black/20"
+                style={{ background: f.bg }}
+              />
+              {f.name}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {photos.length > 0 && (
+        <div
+          className="relative flex flex-col rounded-xl"
+          style={{
+            background:
+              frame.pattern === "checker" ? undefined : frame.bg,
+            backgroundImage:
+              frame.pattern === "checker"
+                ? `conic-gradient(${frame.accent} 25%, ${frame.bg} 0 50%, ${frame.accent} 0 75%, ${frame.bg} 0)`
+                : undefined,
+            backgroundSize:
+              frame.pattern === "checker" ? "28px 28px" : undefined,
+            padding: frame.padding,
+            gap: frame.gap,
+          }}
+        >
+          {frame.pattern === "sprocket" && (
+            <>
+              <div
+                className="pointer-events-none absolute bottom-3 left-[9px] top-3 w-3"
+                style={{
+                  backgroundImage:
+                    "radial-gradient(circle, #fff 3px, transparent 4px)",
+                  backgroundSize: "12px 34px",
+                  backgroundRepeat: "repeat-y",
+                }}
+              />
+              <div
+                className="pointer-events-none absolute bottom-3 right-[9px] top-3 w-3"
+                style={{
+                  backgroundImage:
+                    "radial-gradient(circle, #fff 3px, transparent 4px)",
+                  backgroundSize: "12px 34px",
+                  backgroundRepeat: "repeat-y",
+                }}
+              />
+            </>
+          )}
+          {frame.pattern === "washi" && (
+            <>
+              <div
+                className="absolute left-2 top-1 h-7 w-28 -rotate-6 rounded-sm opacity-85"
+                style={{ background: frame.accent }}
+              />
+              <div
+                className="absolute right-2 top-1 h-7 w-28 rotate-6 rounded-sm opacity-85"
+                style={{ background: "#f9a8d4" }}
+              />
+            </>
+          )}
           {photos.map((src, i) => (
             <img key={i} src={src} alt={`Foto ${i + 1}`} className="w-64" />
           ))}
+          <p
+            className="text-center font-semibold"
+            style={{
+              alignSelf: "center",
+              color: frame.textColor,
+              fontFamily:
+                frame.font === "mono" ? "monospace" : undefined,
+              textTransform:
+                frame.font === "mono" ? "uppercase" : undefined,
+              background:
+                frame.pattern === "checker" ? frame.bg : undefined,
+              padding: frame.pattern === "checker" ? "4px 12px" : undefined,
+              borderRadius: frame.pattern === "checker" ? 999 : undefined,
+            }}
+          >
+            {frameCaption(frame)}
+          </p>
         </div>
       )}
     </div>
